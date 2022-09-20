@@ -24,6 +24,12 @@ const _ = grpc.SupportPackageIsVersion7
 type GreeterClient interface {
 	// Sends a greeting
 	SayHello(ctx context.Context, in *HelloRequest, opts ...grpc.CallOption) (*HelloReply, error)
+	// 服务端流式相应
+	KeepSayHello(ctx context.Context, in *HelloRequest, opts ...grpc.CallOption) (Greeter_KeepSayHelloClient, error)
+	// 客户端流式发送
+	GetAllCongras(ctx context.Context, opts ...grpc.CallOption) (Greeter_GetAllCongrasClient, error)
+	// 双向流
+	KeepReply(ctx context.Context, opts ...grpc.CallOption) (Greeter_KeepReplyClient, error)
 	SayBye(ctx context.Context, in *ByeRequest, opts ...grpc.CallOption) (*ByeReply, error)
 	GetAge(ctx context.Context, in *HelloRequest, opts ...grpc.CallOption) (*AgeReply, error)
 }
@@ -43,6 +49,103 @@ func (c *greeterClient) SayHello(ctx context.Context, in *HelloRequest, opts ...
 		return nil, err
 	}
 	return out, nil
+}
+
+func (c *greeterClient) KeepSayHello(ctx context.Context, in *HelloRequest, opts ...grpc.CallOption) (Greeter_KeepSayHelloClient, error) {
+	stream, err := c.cc.NewStream(ctx, &Greeter_ServiceDesc.Streams[0], "/helloworld.Greeter/KeepSayHello", opts...)
+	if err != nil {
+		return nil, err
+	}
+	x := &greeterKeepSayHelloClient{stream}
+	if err := x.ClientStream.SendMsg(in); err != nil {
+		return nil, err
+	}
+	if err := x.ClientStream.CloseSend(); err != nil {
+		return nil, err
+	}
+	return x, nil
+}
+
+type Greeter_KeepSayHelloClient interface {
+	Recv() (*HelloReply, error)
+	grpc.ClientStream
+}
+
+type greeterKeepSayHelloClient struct {
+	grpc.ClientStream
+}
+
+func (x *greeterKeepSayHelloClient) Recv() (*HelloReply, error) {
+	m := new(HelloReply)
+	if err := x.ClientStream.RecvMsg(m); err != nil {
+		return nil, err
+	}
+	return m, nil
+}
+
+func (c *greeterClient) GetAllCongras(ctx context.Context, opts ...grpc.CallOption) (Greeter_GetAllCongrasClient, error) {
+	stream, err := c.cc.NewStream(ctx, &Greeter_ServiceDesc.Streams[1], "/helloworld.Greeter/GetAllCongras", opts...)
+	if err != nil {
+		return nil, err
+	}
+	x := &greeterGetAllCongrasClient{stream}
+	return x, nil
+}
+
+type Greeter_GetAllCongrasClient interface {
+	Send(*HelloRequest) error
+	CloseAndRecv() (*HelloReply, error)
+	grpc.ClientStream
+}
+
+type greeterGetAllCongrasClient struct {
+	grpc.ClientStream
+}
+
+func (x *greeterGetAllCongrasClient) Send(m *HelloRequest) error {
+	return x.ClientStream.SendMsg(m)
+}
+
+func (x *greeterGetAllCongrasClient) CloseAndRecv() (*HelloReply, error) {
+	if err := x.ClientStream.CloseSend(); err != nil {
+		return nil, err
+	}
+	m := new(HelloReply)
+	if err := x.ClientStream.RecvMsg(m); err != nil {
+		return nil, err
+	}
+	return m, nil
+}
+
+func (c *greeterClient) KeepReply(ctx context.Context, opts ...grpc.CallOption) (Greeter_KeepReplyClient, error) {
+	stream, err := c.cc.NewStream(ctx, &Greeter_ServiceDesc.Streams[2], "/helloworld.Greeter/KeepReply", opts...)
+	if err != nil {
+		return nil, err
+	}
+	x := &greeterKeepReplyClient{stream}
+	return x, nil
+}
+
+type Greeter_KeepReplyClient interface {
+	Send(*HelloRequest) error
+	Recv() (*HelloReply, error)
+	grpc.ClientStream
+}
+
+type greeterKeepReplyClient struct {
+	grpc.ClientStream
+}
+
+func (x *greeterKeepReplyClient) Send(m *HelloRequest) error {
+	return x.ClientStream.SendMsg(m)
+}
+
+func (x *greeterKeepReplyClient) Recv() (*HelloReply, error) {
+	m := new(HelloReply)
+	if err := x.ClientStream.RecvMsg(m); err != nil {
+		return nil, err
+	}
+	return m, nil
 }
 
 func (c *greeterClient) SayBye(ctx context.Context, in *ByeRequest, opts ...grpc.CallOption) (*ByeReply, error) {
@@ -69,6 +172,12 @@ func (c *greeterClient) GetAge(ctx context.Context, in *HelloRequest, opts ...gr
 type GreeterServer interface {
 	// Sends a greeting
 	SayHello(context.Context, *HelloRequest) (*HelloReply, error)
+	// 服务端流式相应
+	KeepSayHello(*HelloRequest, Greeter_KeepSayHelloServer) error
+	// 客户端流式发送
+	GetAllCongras(Greeter_GetAllCongrasServer) error
+	// 双向流
+	KeepReply(Greeter_KeepReplyServer) error
 	SayBye(context.Context, *ByeRequest) (*ByeReply, error)
 	GetAge(context.Context, *HelloRequest) (*AgeReply, error)
 	mustEmbedUnimplementedGreeterServer()
@@ -80,6 +189,15 @@ type UnimplementedGreeterServer struct {
 
 func (UnimplementedGreeterServer) SayHello(context.Context, *HelloRequest) (*HelloReply, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method SayHello not implemented")
+}
+func (UnimplementedGreeterServer) KeepSayHello(*HelloRequest, Greeter_KeepSayHelloServer) error {
+	return status.Errorf(codes.Unimplemented, "method KeepSayHello not implemented")
+}
+func (UnimplementedGreeterServer) GetAllCongras(Greeter_GetAllCongrasServer) error {
+	return status.Errorf(codes.Unimplemented, "method GetAllCongras not implemented")
+}
+func (UnimplementedGreeterServer) KeepReply(Greeter_KeepReplyServer) error {
+	return status.Errorf(codes.Unimplemented, "method KeepReply not implemented")
 }
 func (UnimplementedGreeterServer) SayBye(context.Context, *ByeRequest) (*ByeReply, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method SayBye not implemented")
@@ -116,6 +234,79 @@ func _Greeter_SayHello_Handler(srv interface{}, ctx context.Context, dec func(in
 		return srv.(GreeterServer).SayHello(ctx, req.(*HelloRequest))
 	}
 	return interceptor(ctx, in, info, handler)
+}
+
+func _Greeter_KeepSayHello_Handler(srv interface{}, stream grpc.ServerStream) error {
+	m := new(HelloRequest)
+	if err := stream.RecvMsg(m); err != nil {
+		return err
+	}
+	return srv.(GreeterServer).KeepSayHello(m, &greeterKeepSayHelloServer{stream})
+}
+
+type Greeter_KeepSayHelloServer interface {
+	Send(*HelloReply) error
+	grpc.ServerStream
+}
+
+type greeterKeepSayHelloServer struct {
+	grpc.ServerStream
+}
+
+func (x *greeterKeepSayHelloServer) Send(m *HelloReply) error {
+	return x.ServerStream.SendMsg(m)
+}
+
+func _Greeter_GetAllCongras_Handler(srv interface{}, stream grpc.ServerStream) error {
+	return srv.(GreeterServer).GetAllCongras(&greeterGetAllCongrasServer{stream})
+}
+
+type Greeter_GetAllCongrasServer interface {
+	SendAndClose(*HelloReply) error
+	Recv() (*HelloRequest, error)
+	grpc.ServerStream
+}
+
+type greeterGetAllCongrasServer struct {
+	grpc.ServerStream
+}
+
+func (x *greeterGetAllCongrasServer) SendAndClose(m *HelloReply) error {
+	return x.ServerStream.SendMsg(m)
+}
+
+func (x *greeterGetAllCongrasServer) Recv() (*HelloRequest, error) {
+	m := new(HelloRequest)
+	if err := x.ServerStream.RecvMsg(m); err != nil {
+		return nil, err
+	}
+	return m, nil
+}
+
+func _Greeter_KeepReply_Handler(srv interface{}, stream grpc.ServerStream) error {
+	return srv.(GreeterServer).KeepReply(&greeterKeepReplyServer{stream})
+}
+
+type Greeter_KeepReplyServer interface {
+	Send(*HelloReply) error
+	Recv() (*HelloRequest, error)
+	grpc.ServerStream
+}
+
+type greeterKeepReplyServer struct {
+	grpc.ServerStream
+}
+
+func (x *greeterKeepReplyServer) Send(m *HelloReply) error {
+	return x.ServerStream.SendMsg(m)
+}
+
+func (x *greeterKeepReplyServer) Recv() (*HelloRequest, error) {
+	m := new(HelloRequest)
+	if err := x.ServerStream.RecvMsg(m); err != nil {
+		return nil, err
+	}
+	return m, nil
 }
 
 func _Greeter_SayBye_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
@@ -174,6 +365,23 @@ var Greeter_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _Greeter_GetAge_Handler,
 		},
 	},
-	Streams:  []grpc.StreamDesc{},
+	Streams: []grpc.StreamDesc{
+		{
+			StreamName:    "KeepSayHello",
+			Handler:       _Greeter_KeepSayHello_Handler,
+			ServerStreams: true,
+		},
+		{
+			StreamName:    "GetAllCongras",
+			Handler:       _Greeter_GetAllCongras_Handler,
+			ClientStreams: true,
+		},
+		{
+			StreamName:    "KeepReply",
+			Handler:       _Greeter_KeepReply_Handler,
+			ServerStreams: true,
+			ClientStreams: true,
+		},
+	},
 	Metadata: "helloworld/helloworld.proto",
 }

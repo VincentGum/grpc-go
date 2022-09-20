@@ -25,6 +25,16 @@ package helloworld;
 service Greeter {
   // Sends a greeting
   rpc SayHello (HelloRequest) returns (HelloReply) {}
+
+  // 服务端流式相应
+  rpc KeepSayHello (HelloRequest) returns (stream HelloReply) {}
+
+  // 客户端流式发送
+  rpc GetAllCongras (stream HelloRequest) returns (HelloReply) {}
+
+  // 双向流
+  rpc KeepReply (stream HelloRequest) returns (stream HelloReply) {}
+
   rpc SayBye (ByeRequest) returns (ByeReply) {}
   rpc GetAge (HelloRequest) returns (AgeReply) {}
 }
@@ -32,7 +42,7 @@ service Greeter {
 // The request message containing the user's name.
 message HelloRequest {
   string name = 1;
-  int32 age = 2;
+  int64 age = 2;
 }
 message ByeRequest {
   string name = 1;
@@ -47,5 +57,7 @@ message ByeReply {
   string message = 1;
 }
 message AgeReply {
-  int32 age = 1;
+  int64 age = 1;
 }
+
+// protoc --go_out=. --go_opt=paths=source_relative --go-grpc_out=. --go-grpc_opt=paths=source_relative helloworld/helloworld.proto

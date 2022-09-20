@@ -22,6 +22,7 @@ package main
 import (
 	"context"
 	"flag"
+	"io"
 	"log"
 	"time"
 
@@ -74,4 +75,58 @@ func main() {
 		log.Fatalf("could not greet: %v", err)
 	}
 	log.Printf("Greeting: %v", r3.GetAge())
+
+	stream, err := c.KeepSayHello(context.Background(), &pb.HelloRequest{Name: "john", Age: defaultAge})
+	if err != nil {
+		log.Fatalf("could not greet: %v", err)
+	}
+	for {
+		reply, err := stream.Recv()
+		if err == io.EOF {
+			log.Println("DONE")
+			break
+		}
+		if err != nil {
+			log.Printf("failed to recv: %v", err)
+		}
+		log.Printf("Greeting: %s", reply.Message)
+	}
+
+	allCongrasStream, err := c.GetAllCongras(context.Background())
+	names := []string{"john", "tom", "jack"}
+	for i := 0; i < 3; i++ {
+		if err != nil {
+			log.Printf("failed to call: %v", err)
+			break
+		}
+		allCongrasStream.Send(&pb.HelloRequest{Name: names[i]})
+	}
+	allCongrasReply, err := allCongrasStream.CloseAndRecv()
+	if err != nil {
+		log.Printf("failed to recv: %v", err)
+	}
+	log.Printf("Greeting: %s", allCongrasReply.Message)
+
+	KeepReplyStream, err := c.KeepReply(context.Background())
+	if err != nil {
+		log.Fatalf("could not greet: %v", err)
+	}
+	j := 0
+	for {
+		err := KeepReplyStream.Send(&pb.HelloRequest{Name: names[j], Age: int64(j)})
+		if err != nil {
+			log.Printf("failed to send: %v", err)
+			break
+		}
+		KeepReplyStreamReply, err := KeepReplyStream.Recv()
+		if err != nil {
+			log.Printf("failed to recv: %v", err)
+			break
+		}
+		log.Printf("Greeting: %s", KeepReplyStreamReply.Message)
+		j++
+		if j == 3 {
+			break
+		}
+	}
 }

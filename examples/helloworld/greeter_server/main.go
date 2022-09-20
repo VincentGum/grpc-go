@@ -23,8 +23,11 @@ import (
 	"context"
 	"flag"
 	"fmt"
+	"io"
 	"log"
 	"net"
+	"strconv"
+	"strings"
 
 	"google.golang.org/grpc"
 	pb "google.golang.org/grpc/examples/helloworld/helloworld"
@@ -51,6 +54,49 @@ func (s *server) SayBye(ctx context.Context, in *pb.ByeRequest) (*pb.ByeReply, e
 func (s *server) GetAge(ctx context.Context, in *pb.HelloRequest) (*pb.AgeReply, error) {
 	log.Printf("Received: %v", in.GetAge())
 	return &pb.AgeReply{Age: in.GetAge()}, nil
+}
+
+// stream Demo
+func (s *server) KeepSayHello(in *pb.HelloRequest, stream pb.Greeter_KeepSayHelloServer) error {
+	age := int(in.GetAge())
+	for i := 0; i < age; i++ {
+		stream.Send(&pb.HelloReply{Message: "hello" + strconv.Itoa(i)})
+	}
+	return nil
+}
+
+func (s *server) GetAllCongras(stream pb.Greeter_GetAllCongrasServer) error {
+	congras := []string{}
+	for {
+		in, err := stream.Recv()
+		if err == io.EOF {
+			stream.SendAndClose(&pb.HelloReply{Message: "Hello " + strings.Join(congras, ",")})
+			log.Printf("DONE")
+			return nil
+		}
+		if err != nil {
+			log.Printf("failed to recv: %v", err)
+			return err
+		}
+		congras = append(congras, in.GetName())
+	}
+
+}
+
+func (s *server) KeepReply(stream pb.Greeter_KeepReplyServer) error {
+	for {
+		in, err := stream.Recv()
+		if err == io.EOF {
+			return nil
+		}
+		if err != nil {
+			log.Printf("failed to recv: %v", err)
+			return err
+		}
+		info := in.GetName() + strconv.Itoa(int(in.GetAge()))
+		stream.Send(&pb.HelloReply{Message: info})
+	}
+	return nil
 }
 
 func main() {
