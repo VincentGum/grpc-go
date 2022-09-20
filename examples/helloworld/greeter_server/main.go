@@ -44,6 +44,10 @@ func (s *server) SayHello(ctx context.Context, in *pb.HelloRequest) (*pb.HelloRe
 	log.Printf("Received: %v", in.GetName())
 	return &pb.HelloReply{Message: "Hello " + in.GetName()}, nil
 }
+func (s *server) SayBye(ctx context.Context, in *pb.ByeRequest) (*pb.ByeReply, error) {
+	log.Printf("Received: %v", in.GetName())
+	return &pb.ByeReply{Message: "Hello " + in.GetName() + " " + in.GetInfo()}, nil
+}
 
 func main() {
 	flag.Parse()

@@ -32,11 +32,13 @@ import (
 
 const (
 	defaultName = "world"
+	defaultInfo = "see u later"
 )
 
 var (
 	addr = flag.String("addr", "localhost:50051", "the address to connect to")
 	name = flag.String("name", defaultName, "Name to greet")
+	info = flag.String("info", defaultInfo, "Info to bye")
 )
 
 func main() {
@@ -52,9 +54,16 @@ func main() {
 	// Contact the server and print out its response.
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 	defer cancel()
+
 	r, err := c.SayHello(ctx, &pb.HelloRequest{Name: *name})
 	if err != nil {
 		log.Fatalf("could not greet: %v", err)
 	}
 	log.Printf("Greeting: %s", r.GetMessage())
+
+	r2, err := c.SayBye(ctx, &pb.ByeRequest{Name: "john", Info: *info})
+	if err != nil {
+		log.Fatalf("could not greet: %v", err)
+	}
+	log.Printf("Greeting: %s", r2.GetMessage())
 }
