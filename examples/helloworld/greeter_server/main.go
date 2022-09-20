@@ -48,6 +48,10 @@ func (s *server) SayBye(ctx context.Context, in *pb.ByeRequest) (*pb.ByeReply, e
 	log.Printf("Received: %v", in.GetName())
 	return &pb.ByeReply{Message: "Hello " + in.GetName() + " " + in.GetInfo()}, nil
 }
+func (s *server) GetAge(ctx context.Context, in *pb.HelloRequest) (*pb.AgeReply, error) {
+	log.Printf("Received: %v", in.GetAge())
+	return &pb.AgeReply{Age: in.GetAge()}, nil
+}
 
 func main() {
 	flag.Parse()

@@ -25,6 +25,7 @@ type GreeterClient interface {
 	// Sends a greeting
 	SayHello(ctx context.Context, in *HelloRequest, opts ...grpc.CallOption) (*HelloReply, error)
 	SayBye(ctx context.Context, in *ByeRequest, opts ...grpc.CallOption) (*ByeReply, error)
+	GetAge(ctx context.Context, in *HelloRequest, opts ...grpc.CallOption) (*AgeReply, error)
 }
 
 type greeterClient struct {
@@ -53,6 +54,15 @@ func (c *greeterClient) SayBye(ctx context.Context, in *ByeRequest, opts ...grpc
 	return out, nil
 }
 
+func (c *greeterClient) GetAge(ctx context.Context, in *HelloRequest, opts ...grpc.CallOption) (*AgeReply, error) {
+	out := new(AgeReply)
+	err := c.cc.Invoke(ctx, "/helloworld.Greeter/GetAge", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // GreeterServer is the server API for Greeter service.
 // All implementations must embed UnimplementedGreeterServer
 // for forward compatibility
@@ -60,6 +70,7 @@ type GreeterServer interface {
 	// Sends a greeting
 	SayHello(context.Context, *HelloRequest) (*HelloReply, error)
 	SayBye(context.Context, *ByeRequest) (*ByeReply, error)
+	GetAge(context.Context, *HelloRequest) (*AgeReply, error)
 	mustEmbedUnimplementedGreeterServer()
 }
 
@@ -72,6 +83,9 @@ func (UnimplementedGreeterServer) SayHello(context.Context, *HelloRequest) (*Hel
 }
 func (UnimplementedGreeterServer) SayBye(context.Context, *ByeRequest) (*ByeReply, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method SayBye not implemented")
+}
+func (UnimplementedGreeterServer) GetAge(context.Context, *HelloRequest) (*AgeReply, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetAge not implemented")
 }
 func (UnimplementedGreeterServer) mustEmbedUnimplementedGreeterServer() {}
 
@@ -122,6 +136,24 @@ func _Greeter_SayBye_Handler(srv interface{}, ctx context.Context, dec func(inte
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Greeter_GetAge_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(HelloRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(GreeterServer).GetAge(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/helloworld.Greeter/GetAge",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(GreeterServer).GetAge(ctx, req.(*HelloRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // Greeter_ServiceDesc is the grpc.ServiceDesc for Greeter service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -136,6 +168,10 @@ var Greeter_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "SayBye",
 			Handler:    _Greeter_SayBye_Handler,
+		},
+		{
+			MethodName: "GetAge",
+			Handler:    _Greeter_GetAge_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

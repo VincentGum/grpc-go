@@ -33,12 +33,14 @@ import (
 const (
 	defaultName = "world"
 	defaultInfo = "see u later"
+	defaultAge  = 11
 )
 
 var (
 	addr = flag.String("addr", "localhost:50051", "the address to connect to")
 	name = flag.String("name", defaultName, "Name to greet")
 	info = flag.String("info", defaultInfo, "Info to bye")
+	age  = flag.Int("age", defaultAge, "age")
 )
 
 func main() {
@@ -61,9 +63,15 @@ func main() {
 	}
 	log.Printf("Greeting: %s", r.GetMessage())
 
-	r2, err := c.SayBye(ctx, &pb.ByeRequest{Name: "john", Info: *info})
+	r2, err := c.SayBye(ctx, &pb.ByeRequest{Name: "john", Info: "hope to see u again"})
 	if err != nil {
 		log.Fatalf("could not greet: %v", err)
 	}
 	log.Printf("Greeting: %s", r2.GetMessage())
+
+	r3, err := c.GetAge(ctx, &pb.HelloRequest{Name: "john", Age: defaultAge})
+	if err != nil {
+		log.Fatalf("could not greet: %v", err)
+	}
+	log.Printf("Greeting: %v", r3.GetAge())
 }

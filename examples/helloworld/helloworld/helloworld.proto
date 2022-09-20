@@ -26,11 +26,13 @@ service Greeter {
   // Sends a greeting
   rpc SayHello (HelloRequest) returns (HelloReply) {}
   rpc SayBye (ByeRequest) returns (ByeReply) {}
+  rpc GetAge (HelloRequest) returns (AgeReply) {}
 }
 
 // The request message containing the user's name.
 message HelloRequest {
   string name = 1;
+  int32 age = 2;
 }
 message ByeRequest {
   string name = 1;
@@ -43,4 +45,7 @@ message HelloReply {
 }
 message ByeReply {
   string message = 1;
+}
+message AgeReply {
+  int32 age = 1;
 }
